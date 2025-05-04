@@ -1,0 +1,7 @@
+# Domains to watch for phishing
+keywords:
+  - "apple.com"      # official Apple domain
+  - "appleid.com"    # common spoof target
+  - "appleid.net"
+  - "support-idcase.com"
+  - "icloud.com"

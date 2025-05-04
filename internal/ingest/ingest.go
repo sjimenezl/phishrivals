@@ -13,14 +13,16 @@ import (
 )
 
 type Ingestor struct {
-	Client  *http.Client
-	FeedURL string
+	Client   *http.Client
+	FeedURL  string
+	Keywords []string
 }
 
-func NewIngestor(feedURL string) *Ingestor {
+func NewIngestor(feedURL string, keywords []string) *Ingestor {
 	return &Ingestor{
-		Client:  &http.Client{Timeout: 10 * time.Second},
-		FeedURL: feedURL,
+		Client:   &http.Client{Timeout: 10 * time.Second},
+		FeedURL:  feedURL,
+		Keywords: keywords,
 	}
 }
 
