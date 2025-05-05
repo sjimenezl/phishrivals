@@ -6,11 +6,14 @@ import (
 
 	"github.com/sjimenezl/phishrivals/internal/config"
 	"github.com/sjimenezl/phishrivals/internal/db"
+	"github.com/sjimenezl/phishrivals/internal/enrich"
+	"github.com/sjimenezl/phishrivals/internal/helper"
 	"github.com/sjimenezl/phishrivals/internal/ingest/crtsh"
 	"github.com/sjimenezl/phishrivals/internal/models"
 )
 
-const URL = "https://pastebin.com/raw/fHt0aScX"
+// const URL = "https://pastebin.com/raw/fHt0aScX"
+const RISK_THRESHOLD = 0.5
 
 func main() {
 	db.InitDB()
@@ -19,7 +22,10 @@ func main() {
 		panic(err)
 	}
 
+	//TODO: check if i want the pastebin fetcher
 	// ctx := context.Background()
+	// urls, err := ingestor.Fetch(ctx)
+	enricher := enrich.NewEnricher()
 
 	cfg, err := config.Load("sus.yaml")
 	if err != nil {
@@ -31,26 +37,32 @@ func main() {
 		log.Fatalf("failed to fetch crtsh URLs: %v", err)
 	}
 
-	fmt.Println(crtDomains)
+	// check if the domains are alive
+	for _, domain := range crtDomains {
+		if !helper.IsAlive(domain) {
+			continue
+		}
 
-	// // pastebin feed
-	// ingestor := ingest.NewIngestor(URL, cfg.Keywords)
-	// enricher := enrich.NewEnricher()
+		// check for cert
+		info, err := enricher.Lookup(domain)
+		if err != nil {
+			log.Printf("skip %s: %v", domain, err)
+			continue
+		}
 
-	// urls, err := ingestor.Fetch(ctx)
-	// if err != nil {
-	// 	log.Fatalf("failed to fetch URLs: %v", err)
-	// }
+		// check threat score
+		score := helper.ThreatScore(info)
+		if score < RISK_THRESHOLD {
+			continue
+		}
 
-	// for _, u := range urls {
-	// 	info, err := enricher.Lookup(u)
-	// 	if err != nil {
-	// 		log.Printf("skip %s: %v", u, err)
-	// 		continue
-	// 	}
-	// 	// save to db
-	// 	db.SaveEnrichment(info)
-	// 	// todo: send report email
-	// }
+		// found high risk, feed into DB and takedown pipeline
+		fmt.Println(domain)
+		fmt.Println(score)
+
+		// save to db
+		// db.SaveEnrichment(info)
+		// todo: send report email
+	}
 
 }
